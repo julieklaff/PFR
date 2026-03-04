@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="P.F.R.">
+<meta name="theme-color" content="#e8213a">
+<link rel="manifest" href="manifest.json">
+<title>P.F.R. — Platform Tennis</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+
+<!--
+═══════════════════════════════════════════════════
+  🔧 AIRTABLE SETUP — 5 EASY STEPS
+═══════════════════════════════════════════════════
+  1. Go to airtable.com → create a FREE account
+  2. Create a Base called "PFR Signups"
+  3. Create a table called "Signups" with 4 fields
+     (all Single Line Text):
+       SessionId · PlayerName · SessionDate · SignedUpAt
+  4. Go to airtable.com/create/tokens
+     Create a Personal Access Token with scopes:
+       data.records:read   data.records:write
+     Set access to your PFR Signups base
+  5. Paste your token + Base ID into the two lines below.
+     Your Base ID is in the URL when you open your base:
+     airtable.com/appXXXXXXXXXX/...
+═══════════════════════════════════════════════════
+-->
+<script>
+  const AIRTABLE_TOKEN   = 'patPGo8RC8WmzMtCd.8e1c42d4c2f5e6fcf47abfb5157591ff72b0e6a42c38aaf8d1981e4ef75c8a15';
+  const AIRTABLE_BASE_ID = 'app65DqrAh5EJAW3K';
+  const AIRTABLE_TABLE   = 'Table%201';
+  const AT_URL           = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE}`;
+  const CONFIGURED       = AIRTABLE_TOKEN !== 'YOUR_TOKEN_HERE';
+</script>
+
+<style>
+:root {
+  --black:#0a0a0a; --dark:#111111; --card:#181818; --border:#2a2a2a;
+  --red:#e8213a; --red-dim:#9b1628; --white:#f0ede8; --muted:#888;
+  --accent:#f5c518; --green:#5cc874;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--black);color:var(--white);font-family:'Barlow',sans-serif;overflow-x:hidden;}
+
+/* SETUP BANNER */
+#setup-banner{
+  display:none;position:fixed;top:0;left:0;right:0;z-index:999;
+  background:var(--accent);color:#000;text-align:center;
+  padding:0.6rem 1rem;font-family:'Barlow Condensed',sans-serif;
+  font-size:0.82rem;font-weight:700;letter-spacing:0.08em;
+}
+#setup-banner a{color:#000;text-decoration:underline;cursor:pointer;}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 3rem;height:64px;
+  background:rgba(10,10,10,0.92);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.25em;color:var(--white);text-decoration:none;}
+.nav-logo span{color:var(--red);}
+.nav-links{display:flex;gap:2rem;list-style:none;}
+.nav-links a{font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color 0.2s;}
+.nav-links a:hover{color:var(--white);}
+
+/* HERO */
+#hero{position:relative;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--black);}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(232,33,58,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(232,33,58,0.07) 1px,transparent 1px);background-size:60px 60px;animation:gridPan 20s linear infinite;}
+@keyframes gridPan{from{transform:translateY(0);}to{transform:translateY(60px);}}
+.hero-content{position:relative;z-index:2;text-align:center;animation:heroIn 0.9s cubic-bezier(0.16,1,0.3,1) both;}
+@keyframes heroIn{from{opacity:0;transform:translateY(40px);}to{opacity:1;transform:translateY(0);}}
+.hero-eyebrow{font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:600;letter-spacing:0.4em;text-transform:uppercase;color:var(--red);margin-bottom:1rem;}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(7rem,18vw,16rem);line-height:0.88;letter-spacing:0.06em;color:var(--white);}
+.hero-title .stroke{-webkit-text-stroke:2px var(--white);color:transparent;}
+.hero-sub{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:400;letter-spacing:0.2em;color:var(--muted);margin-top:1.2rem;text-transform:uppercase;}
+.hero-tagline{font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;letter-spacing:0.15em;color:var(--muted);margin-top:0.5rem;font-style:italic;}
+.hero-cta{display:inline-flex;gap:1rem;margin-top:2.5rem;}
+.btn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.85rem;letter-spacing:0.15em;text-transform:uppercase;padding:0.85rem 2.2rem;border:none;cursor:pointer;text-decoration:none;transition:all 0.2s;display:inline-block;}
+.btn-primary{background:var(--red);color:var(--white);}
+.btn-primary:hover{background:#ff2d48;transform:translateY(-2px);}
+.btn-outline{background:transparent;color:var(--white);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--white);}
+.hero-scroll{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:0.5rem;font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;letter-spacing:0.25em;color:var(--muted);text-transform:uppercase;animation:bounce 2s ease-in-out infinite;}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(6px);}}
+.scroll-line{width:1px;height:36px;background:linear-gradient(var(--red),transparent);}
+
+/* SECTIONS */
+section{padding:7rem 3rem;}
+.section-label{font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;font-weight:600;letter-spacing:0.35em;text-transform:uppercase;color:var(--red);margin-bottom:0.75rem;}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,6vw,5rem);letter-spacing:0.04em;line-height:1;color:var(--white);margin-bottom:3rem;}
+
+/* SCHEDULE */
+#schedule{background:var(--dark);}
+
+/* ROSTER */
+#roster{background:var(--black);}
+.roster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);max-width:1200px;}
+.player-card{background:var(--card);padding:1.75rem 1.5rem;position:relative;overflow:hidden;transition:background 0.2s;cursor:default;}
+.player-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:0;background:var(--red);transition:height 0.3s;}
+.player-card:hover{background:#1e1e1e;}
+.player-card:hover::before{height:100%;}
+.player-number{font-family:'Bebas Neue',sans-serif;font-size:3.5rem;line-height:1;color:rgba(255,255,255,0.05);position:absolute;top:0.5rem;right:1rem;}
+.player-name{font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;position:relative;z-index:1;}
+.player-role{font-size:0.8rem;color:var(--muted);margin-top:0.3rem;position:relative;z-index:1;}
+.player-since{font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;letter-spacing:0.15em;color:var(--red);margin-top:0.8rem;position:relative;z-index:1;}
+.player-bio{font-size:0.77rem;color:#666;margin-top:0.5rem;line-height:1.55;position:relative;z-index:1;font-style:italic;}
+.player-card:hover .player-bio{color:var(--muted);}
+
+/* MONTH FILTER */
+.month-btn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.8rem;letter-spacing:0.15em;text-transform:uppercase;padding:0.45rem 1.2rem;background:transparent;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;}
+.month-btn:hover{border-color:#555;color:var(--white)!important;}
+.active-month{background:var(--card);border-color:#555;color:var(--white)!important;}
+
+/* SIGNUP */
+#signup{background:var(--dark);}
+.signup-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;}
+.session-card{background:var(--card);border:1px solid var(--border);padding:1.75rem 2rem;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s;}
+.session-card:hover{transform:translateY(-3px);}
+.session-type{font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;margin-bottom:0.5rem;}
+.session-title{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.4rem;}
+.session-meta{font-size:0.85rem;color:var(--muted);margin-bottom:1rem;line-height:1.7;}
+.session-spots{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;}
+.spots-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.spots-fill{height:100%;border-radius:2px;transition:width 0.6s ease;}
+.spots-label{font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--muted);white-space:nowrap;}
+.signees-list{margin-bottom:0.85rem;}
+.signee-pill{display:inline-flex;align-items:center;gap:0.3rem;font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;letter-spacing:0.04em;background:rgba(255,255,255,0.05);border:1px solid var(--border);padding:0.2rem 0.6rem;margin:0.2rem 0.2rem 0 0;border-radius:2px;}
+.signee-you{background:rgba(232,33,58,0.15);border-color:var(--red-dim);color:var(--red);}
+.signup-form{display:flex;gap:0.5rem;margin-top:0.25rem;}
+.signup-input{flex:1;background:var(--black);border:1px solid var(--border);color:var(--white);padding:0.6rem 1rem;font-family:'Barlow',sans-serif;font-size:0.85rem;outline:none;transition:border-color 0.2s;}
+.signup-input::placeholder{color:var(--muted);}
+.signup-input:focus{border-color:var(--red);}
+.btn-sm{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.6rem 1.2rem;background:var(--red);color:var(--white);border:none;cursor:pointer;transition:background 0.2s;white-space:nowrap;}
+.btn-sm:hover:not(:disabled){background:#ff2d48;}
+.btn-sm:disabled{background:#333;cursor:default;}
+.confirmed-msg{font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;letter-spacing:0.1em;margin-top:0.4rem;}
+.full-badge{font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;letter-spacing:0.1em;color:var(--muted);padding:0.5rem 0;text-transform:uppercase;}
+
+/* FOOTER */
+footer{background:var(--black);border-top:1px solid var(--border);padding:3rem;display:flex;align-items:center;justify-content:space-between;}
+.footer-logo{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:0.25em;}
+.footer-logo span{color:var(--red);}
+.footer-tagline{font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-top:0.3rem;}
+.footer-right{font-size:0.8rem;color:var(--muted);text-align:right;line-height:1.7;}
+
+/* INSTALL BANNER */
+#install-banner{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--card);border-top:2px solid var(--red);padding:1rem 2rem;align-items:center;justify-content:space-between;gap:1rem;}
+.install-text{font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;letter-spacing:0.05em;}
+.install-text strong{color:var(--red);}
+.install-actions{display:flex;gap:0.75rem;flex-shrink:0;}
+.btn-install{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.55rem 1.2rem;background:var(--red);color:var(--white);border:none;cursor:pointer;}
+.btn-dismiss{font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid var(--border);padding:0.55rem 1rem;cursor:pointer;}
+
+/* SETUP MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:500;overflow-y:auto;padding:2rem;}
+.modal-box{max-width:560px;margin:0 auto;background:var(--card);border:1px solid var(--border);padding:2.5rem;}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  nav{padding:0 1.5rem;}
+  .nav-links{display:none;}
+  section{padding:5rem 1.5rem;}
+  footer{flex-direction:column;gap:1.5rem;text-align:center;}
+  .footer-right{text-align:center;}
+  #install-banner{flex-direction:column;align-items:flex-start;padding:1rem 1.5rem;}
+}
+</style>
+</head>
+<body>
+
+<div id="setup-banner">
+  ⚙️ Real-time sign-ups need a quick Airtable setup — <a onclick="showSetup()">tap here for the 5-step guide</a>. Sign-ups still work locally until then.
+</div>
+
+<nav id="main-nav">
+  <a class="nav-logo" href="#hero">P<span>.</span>F<span>.</span>R<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="#schedule">Schedule</a></li>
+    <li><a href="#roster">Roster</a></li>
+    <li><a href="#signup">Sign Up</a></li>
+    <li><a href="#fmk">F·M·K</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Series 1 · Platform Tennis</p>
+    <h1 class="hero-title">P.F.<span class="stroke">R.</span></h1>
+    <p class="hero-sub">Play Hard. Fight Together. Rise.</p>
+    <p class="hero-tagline">In other words... Paddle F***ING Rules <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="28" height="28" style="vertical-align:middle;margin-left:4px;display:inline-block;">
+  <!-- Platform tennis paddle body -->
+  <rect x="18" y="8" width="24" height="30" rx="12" ry="12" fill="none" stroke="#f0ede8" stroke-width="2.5"/>
+  <!-- Perforations on paddle face -->
+  <circle cx="26" cy="18" r="1.5" fill="#f0ede8" opacity="0.6"/>
+  <circle cx="34" cy="18" r="1.5" fill="#f0ede8" opacity="0.6"/>
+  <circle cx="22" cy="24" r="1.5" fill="#f0ede8" opacity="0.6"/>
+  <circle cx="30" cy="24" r="1.5" fill="#f0ede8" opacity="0.6"/>
+  <circle cx="38" cy="24" r="1.5" fill="#f0ede8" opacity="0.6"/>
+  <circle cx="26" cy="30" r="1.5" fill="#f0ede8" opacity="0.6"/>
+  <circle cx="34" cy="30" r="1.5" fill="#f0ede8" opacity="0.6"/>
+  <!-- Handle -->
+  <rect x="27" y="37" width="6" height="14" rx="3" fill="#e8213a"/>
+  <rect x="27" y="37" width="6" height="3" fill="#c0182e"/>
+  <!-- Grip wrap lines -->
+  <line x1="27" y1="41" x2="33" y2="41" stroke="#f0ede8" stroke-width="0.8" opacity="0.4"/>
+  <line x1="27" y1="44" x2="33" y2="44" stroke="#f0ede8" stroke-width="0.8" opacity="0.4"/>
+  <line x1="27" y1="47" x2="33" y2="47" stroke="#f0ede8" stroke-width="0.8" opacity="0.4"/>
+  <!-- Ball -->
+  <circle cx="50" cy="14" r="7" fill="none" stroke="#f5c518" stroke-width="2.2"/>
+  <path d="M44 11 Q50 16 56 11" fill="none" stroke="#f5c518" stroke-width="1.2" opacity="0.7"/>
+  <path d="M44 17 Q50 12 56 17" fill="none" stroke="#f5c518" stroke-width="1.2" opacity="0.7"/>
+</svg></p>
+    <div class="hero-cta">
+      <a href="#signup" class="btn btn-primary">Sign Up for a Game</a>
+      <a href="#roster" class="btn btn-outline">Meet the Team</a>
+    </div>
+  </div>
+  <div class="hero-scroll"><div class="scroll-line"></div><span>Scroll</span></div>
+</section>
+
+<!-- SCHEDULE -->
+<section id="schedule">
+  <p class="section-label">CNSWPL · Series 1</p>
+  <h2 class="section-title">Schedule</h2>
+  <div style="display:flex;align-items:center;gap:2rem;max-width:600px;">
+    <div style="flex:1;height:1px;background:var(--border);"></div>
+    <div style="text-align:center;padding:2.5rem 3rem;border:1px solid var(--border);background:var(--card);min-width:300px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:0.1em;color:var(--white);line-height:1;">2026 Spring</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;letter-spacing:0.3em;color:var(--red);text-transform:uppercase;margin-top:0.5rem;">Schedule Coming Soon</div>
+      <div style="font-size:0.85rem;color:var(--muted);margin-top:1rem;line-height:1.7;">Match dates will be posted here as soon<br>as the league finalizes the calendar.<br>Check back soon! 🎾</div>
+    </div>
+    <div style="flex:1;height:1px;background:var(--border);"></div>
+  </div>
+</section>
+
+<!-- ROSTER -->
+<section id="roster">
+  <p class="section-label">The Team</p>
+  <h2 class="section-title">Roster</h2>
+  <div class="roster-grid">
+    <div class="player-card"><div class="player-number">01</div><div class="player-name">Julie Klaff</div><div class="player-since">⚡ The Closer</div><div class="player-bio">Private equity partner by day, paddle assassin by night. Negotiates deals worth millions and somehow still has time to crush a behind-the-back lob. Rumored to have never lost a point she actually wanted to win. Her opponents file loss reports in Q4.</div></div>
+    <div class="player-card"><div class="player-number">02</div><div class="player-name">Julie Hockenberg</div><div class="player-since">💋 The Heartbreaker</div><div class="player-bio">Arrives looking like she wandered off a magazine shoot, plays like she has a point to prove, and leaves opponents wondering what just happened to them. Has been known to distract the other team simply by showing up. Coordinates outfits with Ashley so precisely that opponents suspect a psych-out strategy. They're right.</div></div>
+    <div class="player-card"><div class="player-number">03</div><div class="player-name">Lizzie Kaplan</div><div class="player-since">🎯 The Sniper</div><div class="player-bio">Deceptively quiet until she's putting the ball exactly where you're not. Her resting face says "brunch." Her backhand says "don't."</div></div>
+    <div class="player-card"><div class="player-number">04</div><div class="player-name">Andi Daube</div><div class="player-since">🔥 The Energizer</div><div class="player-bio">Arrives to every match already warmed up, already pumped, already mentally winning. Scientists have yet to identify her energy source. Opponents have requested she be legally required to arrive 10 minutes late. Request denied.</div></div>
+    <div class="player-card"><div class="player-number">05</div><div class="player-name">Sari Hirsch</div><div class="player-since">🧠 The Strategist</div><div class="player-bio">Three steps ahead of everyone at all times. Plays paddle the way a chess grandmaster plays chess — by the time you realize what happened, you've already lost. Known to diagram points on cocktail napkins at post-match dinners.</div></div>
+    <div class="player-card"><div class="player-number">06</div><div class="player-name">Emily Tresley</div><div class="player-since">💫 The Wildcard</div><div class="player-bio">Capable of producing a shot so outrageous that both teams stop and stare. "Trust the process" is her motto. The process is chaos. It usually works.</div></div>
+    <div class="player-card"><div class="player-number">07</div><div class="player-name">Lisa Korach</div><div class="player-since">🏔️ The Wall</div><div class="player-bio">Nothing gets past her. Absolutely nothing. Has returned balls that had no business coming back. Opponents have filed formal complaints with the CNSWPL. The complaints were denied — the rules don't cover "unreasonably good defense."</div></div>
+    <div class="player-card"><div class="player-number">08</div><div class="player-name">Buddy Erwin</div><div class="player-since">🎉 The Hype Person</div><div class="player-bio">Loudest celebratory "LET'S GO!" on the North Shore. Doubles as team morale officer, snack coordinator, and honorary hype woman. Even her fist pumps have a fist pump.</div></div>
+    <div class="player-card"><div class="player-number">09</div><div class="player-name">Jamie Zaransky</div><div class="player-since">⚡ The Spark</div><div class="player-bio">Shows up in a good mood and refuses to leave in a bad one. Has an uncanny ability to flip momentum at the worst possible moment for the other team. Wins the vibe before the first ball is tossed.</div></div>
+    <div class="player-card"><div class="player-number">10</div><div class="player-name">Leslie Katz</div><div class="player-since">🎯 The Technician</div><div class="player-bio">Textbook form. Every time. The pro's favorite student and the opponent's least favorite matchup. Believes you should look like you know what you're doing — and she absolutely does.</div></div>
+    <div class="player-card"><div class="player-number">11</div><div class="player-name">Lindy Rosenberg</div><div class="player-since">🌪️ The Force</div><div class="player-bio">Compact swing, massive results. You don't see the shot coming until it's already past you. Rumored to have learned the game in one winter and immediately made Series 1. Opponents insist this should be illegal. It's not.</div></div>
+    <div class="player-card"><div class="player-number">12</div><div class="player-name">Sam Borstein</div><div class="player-since">🧊 Ice Cold</div><div class="player-bio">Down 5–1 in the third? Fine. Wind chill of -10°? Fine. Broken string mid-point? Fine. Sam Borstein does not panic. Sam Borstein has never panicked. Sam Borstein is an icon.</div></div>
+    <div class="player-card"><div class="player-number">13</div><div class="player-name">Debbie Goldstein</div><div class="player-since">🎤 The Commentator</div><div class="player-bio">Provides real-time, unfiltered match commentary for all four players simultaneously — including the other team. Nobody asked. Everyone secretly loves it. Considering a career at the Tennis Channel.</div></div>
+    <div class="player-card"><div class="player-number">14</div><div class="player-name">Susie Kramer</div><div class="player-since">🌟 The Glue</div><div class="player-bio">The one who makes everyone better just by being there. Remembers every opponent's tendencies, keeps the team loose when it's tight, and somehow always has a spare ball when you need one. P.F.R.'s secret weapon isn't a shot — it's Susie.</div></div>
+    <div class="player-card"><div class="player-number">15</div><div class="player-name">Ashley Lebovic</div><div class="player-since">👯 The Other Half</div><div class="player-bio">Shows up to every match in a coordinated outfit with Julie H. that suggests they planned it three days in advance. They did. Opponents are so busy figuring out if it's intentional that Ashley has already taken the net. It's intentional. Everything about Ashley is intentional.</div></div>
+    <div class="player-card"><div class="player-number">16</div><div class="player-name">Avis Oakes</div><div class="player-since">🦅 The Hawk</div><div class="player-bio">Sees everything. Every opening, every weak shot, every moment of hesitation — Avis clocks it before you've even finished your follow-through. Opponents describe playing her as "being watched very carefully." They are not wrong.</div></div>
+  </div>
+</section>
+
+<!-- SIGN UP -->
+<section id="signup">
+  <p class="section-label">Get on the Court</p>
+  <h2 class="section-title">Sign Up</h2>
+  <p style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;color:var(--muted);letter-spacing:0.1em;margin-top:-1.5rem;margin-bottom:1.5rem;text-transform:uppercase;">Game Play · Wednesdays &amp; Fridays · 9:00–11:00 AM · PFR Courts</p>
+  <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:2.5rem;align-items:center;">
+    <span style="font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);">Filter:</span>
+    <button onclick="filterMonth('all')" id="btn-all" class="month-btn active-month">All</button>
+    <button onclick="filterMonth('mar')" id="btn-mar" class="month-btn" style="color:var(--red);">March</button>
+    <button onclick="filterMonth('apr')" id="btn-apr" class="month-btn" style="color:var(--accent);">April</button>
+    <button onclick="filterMonth('may')" id="btn-may" class="month-btn" style="color:var(--green);">May</button>
+  </div>
+  <div class="signup-grid" id="sessions-container">
+    <div style="color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;letter-spacing:0.1em;padding:1rem 0;">Loading sessions…</div>
+  </div>
+</section>
+
+<!-- FMK -->
+<section id="fmk" style="background:var(--black);">
+  <p class="section-label">A Very Important Question</p>
+  <h2 class="section-title">F, Marry, Kill</h2>
+  <p style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;color:var(--muted);letter-spacing:0.1em;margin-top:-1.5rem;margin-bottom:3rem;text-transform:uppercase;">Platform Tennis Edition · You Know You've Thought About It</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;max-width:1000px;">
+
+    <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--red);padding:2rem;position:relative;overflow:hidden;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:3.5rem;color:rgba(255,255,255,0.04);position:absolute;top:0.5rem;right:1rem;line-height:1;">PRO</div>
+      <div style="width:72px;height:72px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;margin-bottom:1rem;border:2px solid var(--red-dim);">
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:0.05em;color:var(--white);">DB</span>
+      </div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--red);margin-bottom:0.5rem;">The National Champion</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;">Drew Broderick</div>
+      <div style="font-size:0.82rem;color:var(--muted);line-height:1.65;font-style:italic;margin-bottom:1.25rem;">Three-time Men's National Champion. Has a six-year partnership with Jared Palmer that is frankly more committed than most marriages. Hits overheads that make grown women cry. Dangerously good looking on the court, which is its own kind of unfair. The obvious "Marry" — but also maybe the "Kill" because who can compete with that.</div>
+      <div id="fmk-vote-drew" style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button class="fmk-btn" onclick="fmkVote('drew','f')" id="drew-f">💋 F</button>
+        <button class="fmk-btn" onclick="fmkVote('drew','m')" id="drew-m">💍 Marry</button>
+        <button class="fmk-btn" onclick="fmkVote('drew','k')" id="drew-k">💀 Kill</button>
+      </div>
+      <div id="drew-result" style="display:none;font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;letter-spacing:0.1em;color:var(--red);margin-top:0.75rem;"></div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--accent);padding:2rem;position:relative;overflow:hidden;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:3.5rem;color:rgba(255,255,255,0.04);position:absolute;top:0.5rem;right:1rem;line-height:1;">PRO</div>
+      <div style="width:72px;height:72px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:1rem;border:2px solid #c9a010;">
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:0.05em;color:#000;">GM</span>
+      </div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;">The Chicago Legend</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;">Guy Moore</div>
+      <div style="font-size:0.82rem;color:var(--muted);line-height:1.65;font-style:italic;margin-bottom:1.25rem;">Chicago's own platform tennis royalty. Has been dominating North Shore courts since before some of you learned to hold a paddle. The kind of pro who makes it look effortless, which is both inspiring and deeply annoying. Probably knows your club, your game, and your weaknesses. The "F" energy is undeniable — but so is the threat level. SLIDE RIGHT!</div>
+      <div id="fmk-vote-guy" style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button class="fmk-btn" onclick="fmkVote('guy','f')" id="guy-f">💋 F</button>
+        <button class="fmk-btn" onclick="fmkVote('guy','m')" id="guy-m">💍 Marry</button>
+        <button class="fmk-btn" onclick="fmkVote('guy','k')" id="guy-k">💀 Kill</button>
+      </div>
+      <div id="guy-result" style="display:none;font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;letter-spacing:0.1em;color:var(--accent);margin-top:0.75rem;"></div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--green);padding:2rem;position:relative;overflow:hidden;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:3.5rem;color:rgba(255,255,255,0.04);position:absolute;top:0.5rem;right:1rem;line-height:1;">PRO</div>
+      <div style="width:72px;height:72px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;margin-bottom:1rem;border:2px solid #3fa85a;">
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:0.05em;color:#000;">JR</span>
+      </div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--green);margin-bottom:0.5rem;">The Teaching Pro</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;">Jeff Rightnour</div>
+      <div style="font-size:0.82rem;color:var(--muted);line-height:1.65;font-style:italic;margin-bottom:1.25rem;">6'1" of pure paddle instruction. Has spent his career making other people better, which is either very selfless or a long con. Patient, technical, encouraging — the kind of pro who tells you your form is "coming along great" while internally weeping. Husband material? Absolutely. But also the most likely to correct your grip at dinner.</div>
+      <div id="fmk-vote-jeff" style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button class="fmk-btn" onclick="fmkVote('jeff','f')" id="jeff-f">💋 F</button>
+        <button class="fmk-btn" onclick="fmkVote('jeff','m')" id="jeff-m">💍 Marry</button>
+        <button class="fmk-btn" onclick="fmkVote('jeff','k')" id="jeff-k">💀 Kill</button>
+      </div>
+      <div id="jeff-result" style="display:none;font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;letter-spacing:0.1em;color:var(--green);margin-top:0.75rem;"></div>
+    </div>
+
+  </div>
+</section>
+
+<style>
+.fmk-btn {
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.78rem;
+  letter-spacing:0.1em;text-transform:uppercase;padding:0.5rem 1rem;
+  background:transparent;border:1px solid var(--border);color:var(--muted);
+  cursor:pointer;transition:all 0.2s;
+}
+.fmk-btn:hover { border-color:#555; color:var(--white); }
+.fmk-btn.selected { background:var(--red); border-color:var(--red); color:var(--white); }
+</style>
+
+<script>
+const fmkVotes = {};
+const fmkLabels = { f:'💋 F — noted, no further questions.', m:'💍 Marry — bold choice. Hope you like watching paddle forever.', k:'💀 Kill — cold. Absolutely cold.' };
+
+function fmkVote(person, choice) {
+  fmkVotes[person] = choice;
+  ['f','m','k'].forEach(c => {
+    const btn = document.getElementById(person+'-'+c);
+    if (btn) { btn.classList.toggle('selected', c===choice); }
+  });
+  const result = document.getElementById(person+'-result');
+  if (result) { result.style.display='block'; result.textContent = fmkLabels[choice]; }
+}
+</script>
+<footer>
+  <div>
+    <div class="footer-logo">P<span>.</span>F<span>.</span>R<span>.</span></div>
+    <div class="footer-tagline">Series 1 · Platform Tennis · Spring 2026</div>
+  </div>
+  <div class="footer-right">PFR Courts · Chicago, IL<br>Birchwood &amp; Lakeshore</div>
+</footer>
+
+<!-- PWA INSTALL BANNER -->
+<div id="install-banner">
+  <div class="install-text"><strong>Add P.F.R. to your Home Screen</strong> — sign up for games right from your phone.</div>
+  <div class="install-actions">
+    <button class="btn-install" id="install-btn">Install App</button>
+    <button class="btn-dismiss" onclick="dismissInstall()">Not Now</button>
+  </div>
+</div>
+
+<!-- SETUP MODAL -->
+<div class="modal-overlay" id="setup-modal">
+  <div class="modal-box">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.1em;color:var(--red);margin-bottom:1.25rem;">Airtable Setup Guide</div>
+    <div style="font-family:'Barlow',sans-serif;font-size:0.88rem;line-height:1.9;color:var(--white);">
+      <p style="margin-bottom:1rem;color:var(--muted);">Follow these 5 steps to enable real-time sign-ups visible to everyone on the team:</p>
+      <ol style="padding-left:1.25rem;margin-bottom:1.5rem;">
+        <li>Go to <strong>airtable.com</strong> → create a free account</li>
+        <li>Create a new Base called <strong>"PFR Signups"</strong></li>
+        <li>Create a table called <strong>"Signups"</strong> with 4 fields (all Single Line Text):<br>
+          <code style="background:#0a0a0a;border:1px solid var(--border);padding:0.3rem 0.6rem;font-size:0.78rem;display:inline-block;margin-top:0.3rem;">SessionId &nbsp;·&nbsp; PlayerName &nbsp;·&nbsp; SessionDate &nbsp;·&nbsp; SignedUpAt</code>
+        </li>
+        <li>Go to <strong>airtable.com/create/tokens</strong> → create a Personal Access Token<br>
+          <span style="color:var(--muted);font-size:0.82rem;">Scopes needed: <code style="background:#0a0a0a;padding:0.1rem 0.4rem;">data.records:read</code> and <code style="background:#0a0a0a;padding:0.1rem 0.4rem;">data.records:write</code></span>
+        </li>
+        <li>Open <strong>pfr-team-site.html</strong> in any text editor and replace the two values at the top of the &lt;script&gt; block:
+          <code style="background:#0a0a0a;border:1px solid var(--border);padding:0.4rem 0.8rem;font-size:0.78rem;display:block;margin-top:0.5rem;line-height:1.8;">AIRTABLE_TOKEN = 'paste your token here'<br>AIRTABLE_BASE_ID = 'paste your base ID here'</code>
+          <span style="color:var(--muted);font-size:0.8rem;display:block;margin-top:0.4rem;">Your Base ID is in the URL when you open your base:<br>airtable.com/<strong style="color:var(--accent);">appXXXXXXXXXX</strong>/tbl.../viw...</span>
+        </li>
+      </ol>
+      <p style="color:var(--muted);font-size:0.82rem;">Once configured, every sign-up is saved instantly and visible to all teammates in real time. The table in Airtable also gives you a clean list of who's coming to each session.</p>
+    </div>
+    <button onclick="document.getElementById('setup-modal').style.display='none'" style="margin-top:2rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.85rem;letter-spacing:0.15em;text-transform:uppercase;padding:0.75rem 2.2rem;background:var(--red);color:var(--white);border:none;cursor:pointer;">Got It ✓</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════
+// SESSION DATA
+// ════════════════════════════════════════
+const SESSIONS = [
+  {id:'s1', month:'mar',day:'Wednesday',date:'Mar 4'},
+  {id:'s2', month:'mar',day:'Friday',   date:'Mar 6'},
+  {id:'s3', month:'mar',day:'Wednesday',date:'Mar 11'},
+  {id:'s4', month:'mar',day:'Friday',   date:'Mar 13'},
+  {id:'s5', month:'mar',day:'Wednesday',date:'Mar 18'},
+  {id:'s6', month:'mar',day:'Friday',   date:'Mar 20'},
+  {id:'s7', month:'mar',day:'Wednesday',date:'Mar 25'},
+  {id:'s8', month:'mar',day:'Friday',   date:'Mar 27'},
+  {id:'s9', month:'apr',day:'Wednesday',date:'Apr 1'},
+  {id:'s10',month:'apr',day:'Friday',   date:'Apr 3'},
+  {id:'s11',month:'apr',day:'Wednesday',date:'Apr 8'},
+  {id:'s12',month:'apr',day:'Friday',   date:'Apr 10'},
+  {id:'s13',month:'apr',day:'Wednesday',date:'Apr 15'},
+  {id:'s14',month:'apr',day:'Friday',   date:'Apr 17'},
+  {id:'s15',month:'apr',day:'Wednesday',date:'Apr 22'},
+  {id:'s16',month:'apr',day:'Friday',   date:'Apr 24'},
+  {id:'s17',month:'apr',day:'Wednesday',date:'Apr 29'},
+  {id:'s18',month:'may',day:'Friday',   date:'May 1'},
+  {id:'s19',month:'may',day:'Wednesday',date:'May 6'},
+  {id:'s20',month:'may',day:'Friday',   date:'May 8'},
+  {id:'s21',month:'may',day:'Wednesday',date:'May 13'},
+  {id:'s22',month:'may',day:'Friday',   date:'May 15'},
+  {id:'s23',month:'may',day:'Wednesday',date:'May 20'},
+  {id:'s24',month:'may',day:'Friday',   date:'May 22'},
+  {id:'s25',month:'may',day:'Wednesday',date:'May 27'},
+  {id:'s26',month:'may',day:'Friday',   date:'May 29'},
+];
+
+const M_COLOR = {mar:'var(--red)',apr:'var(--accent)',may:'var(--green)'};
+const M_LABEL = {mar:'March',apr:'April',may:'May'};
+const MAX_SPOTS = 8;
+const LOCAL_NAME_KEY = 'pfr_player_name';
+
+let signeeCache = {}; // { sessionId: [{name, recordId}] }
+let currentFilter = 'all';
+let myName = localStorage.getItem(LOCAL_NAME_KEY) || '';
+
+// ════════════════════════════════════════
+// AIRTABLE API
+// ════════════════════════════════════════
+async function atFetch(sessionId) {
+  if (!CONFIGURED) return [];
+  try {
+    const filter = encodeURIComponent(`{session}="${sessionId}"`);
+    const r = await fetch(`${AT_URL}?filterByFormula=${filter}`, {
+      headers:{Authorization:`Bearer ${AIRTABLE_TOKEN}`}
+    });
+    const d = await r.json();
+    if (d.error) { console.warn('atFetch error:', d); return []; }
+    return (d.records||[]).map(rec=>({name:rec.fields.Name, recordId:rec.id}));
+  } catch(e){ console.warn('atFetch network error:', e); return []; }
+}
+
+async function atAdd(sessionId, sessionDate, playerName) {
+  if (!CONFIGURED) {
+    if (!signeeCache[sessionId]) signeeCache[sessionId]=[];
+    signeeCache[sessionId].push({name:playerName,recordId:null});
+    return true;
+  }
+  try {
+    const body = {fields:{
+      Name:playerName,
+      date:sessionDate,
+      session:sessionId,
+      time:new Date().toISOString()
+    }};
+    console.log('Sending to Airtable:', JSON.stringify(body));
+    const r = await fetch(AT_URL, {
+      method:'POST',
+      headers:{Authorization:`Bearer ${AIRTABLE_TOKEN}`,'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    const d = await r.json();
+    console.log('Airtable response:', JSON.stringify(d));
+    if (d.error) {
+      const msg = typeof d.error === 'object' ? (d.error.type||JSON.stringify(d.error)) : String(d.error);
+      const detail = d.message ? ': ' + d.message : '';
+      showToast('⚠️ ' + msg + detail, true);
+      return false;
+    }
+    return !!d.id;
+  } catch(e){
+    showToast('⚠️ Network error — ' + e.message, true);
+    return false;
+  }
+}
+
+function showToast(msg, isError=false) {
+  let toast = document.getElementById('pfr-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'pfr-toast';
+    toast.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+      padding:0.85rem 1.5rem;font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;
+      letter-spacing:0.08em;z-index:999;max-width:90vw;text-align:center;
+      border-radius:2px;transition:opacity 0.4s;`;
+    document.body.appendChild(toast);
+  }
+  toast.style.background = isError ? '#c0182e' : '#1a1a1a';
+  toast.style.border = isError ? '1px solid #e8213a' : '1px solid #3a3a3a';
+  toast.style.color = '#f0ede8';
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { toast.style.opacity = '0'; }, 5000);
+}
+
+// ════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════
+function spotsLeft(sid){ return Math.max(0, MAX_SPOTS-(signeeCache[sid]||[]).length); }
+function isFull(sid){ return spotsLeft(sid)===0; }
+function isMe(sid){ return myName && (signeeCache[sid]||[]).some(s=>s.name.trim().toLowerCase()===myName.trim().toLowerCase()); }
+
+function cardHTML(s) {
+  const color = M_COLOR[s.month];
+  const left  = spotsLeft(s.id);
+  const pct   = Math.round(((MAX_SPOTS-left)/MAX_SPOTS)*100);
+  const full  = isFull(s.id);
+  const me    = isMe(s.id);
+  const signees = signeeCache[s.id]||[];
+  const spotsText = left===0?'FULL':left===1?'1 spot left':`${left} spots open`;
+
+  const signeePills = signees.length ? `
+    <div class="signees-list">
+      ${signees.map(p=>{
+        const mine = myName && p.name.trim().toLowerCase()===myName.trim().toLowerCase();
+        return `<span class="signee-pill${mine?' signee-you':''}">${mine?'★ ':''}${p.name}</span>`;
+      }).join('')}
+    </div>` : '';
+
+  const action = me
+    ? `<div class="confirmed-msg" style="color:${color};">✓ You're in for ${s.date}!</div>`
+    : full
+      ? `<div class="full-badge">Session Full</div>`
+      : `<div class="signup-form">
+           <input class="signup-input" type="text" placeholder="Your name" id="inp-${s.id}" value="${myName}" autocomplete="name">
+           <button class="btn-sm" id="btn-${s.id}" onclick="handleJoin('${s.id}','${s.date}')">Join</button>
+         </div>`;
+
+  return `
+    <div class="session-card" style="border-top:2px solid ${color};">
+      <div class="session-type" style="color:${color};">${M_LABEL[s.month]} · ${s.day}</div>
+      <div class="session-title">${s.date} · Game Play</div>
+      <div class="session-meta">9:00–11:00 AM · PFR Courts</div>
+      <div class="session-spots">
+        <div class="spots-bar"><div class="spots-fill" style="width:${pct}%;background:${color};"></div></div>
+        <span class="spots-label">${spotsText}</span>
+      </div>
+      ${signeePills}
+      ${action}
+    </div>`;
+}
+
+function renderSessions(filter) {
+  currentFilter = filter;
+  const list = filter==='all' ? SESSIONS : SESSIONS.filter(s=>s.month===filter);
+  const container = document.getElementById('sessions-container');
+  container.innerHTML = list.map(cardHTML).join('');
+  container.querySelectorAll('.session-card').forEach((el,i)=>{
+    el.style.opacity='0'; el.style.transform='translateY(14px)';
+    setTimeout(()=>{ el.style.transition='opacity 0.32s ease,transform 0.32s ease'; el.style.opacity='1'; el.style.transform='translateY(0)'; }, i*28);
+  });
+}
+
+// ════════════════════════════════════════
+// LOAD ALL SIGNEES
+// ════════════════════════════════════════
+async function loadAll() {
+  renderSessions(currentFilter); // render immediately (empty)
+  if (!CONFIGURED) return;
+  const results = await Promise.all(SESSIONS.map(s=>atFetch(s.id)));
+  SESSIONS.forEach((s,i)=>{ signeeCache[s.id]=results[i]; });
+  renderSessions(currentFilter);
+  // Auto-refresh every 30s so teammates' sign-ups appear
+  setInterval(async()=>{
+    const r = await Promise.all(SESSIONS.map(s=>atFetch(s.id)));
+    SESSIONS.forEach((s,i)=>{ signeeCache[s.id]=r[i]; });
+    renderSessions(currentFilter);
+  }, 30000);
+}
+
+// ════════════════════════════════════════
+// JOIN HANDLER
+// ════════════════════════════════════════
+async function handleJoin(sid, sessionDate) {
+  const input = document.getElementById('inp-'+sid);
+  const btn   = document.getElementById('btn-'+sid);
+  const name  = input ? input.value.trim() : '';
+  if (!name) { if(input) input.focus(); return; }
+
+  myName = name;
+  localStorage.setItem(LOCAL_NAME_KEY, name);
+  if (btn) { btn.disabled=true; btn.textContent='Joining…'; }
+
+  const ok = await atAdd(sid, sessionDate, name);
+  if (ok) {
+    if (!signeeCache[sid]) signeeCache[sid]=[];
+    if (!isMe(sid)) signeeCache[sid].push({name, recordId:null});
+    showToast('✓ You\'re signed up for ' + sessionDate + '!');
+    renderSessions(currentFilter);
+  } else {
+    // re-enable button so they can try again
+    if (btn) { btn.disabled=false; btn.textContent='Join'; }
+  }
+}
+
+// ════════════════════════════════════════
+// MONTH FILTER
+// ════════════════════════════════════════
+function filterMonth(m) {
+  document.querySelectorAll('.month-btn').forEach(b=>b.classList.remove('active-month'));
+  document.getElementById('btn-'+m).classList.add('active-month');
+  renderSessions(m);
+}
+
+// ════════════════════════════════════════
+// SETUP MODAL
+// ════════════════════════════════════════
+function showSetup() { document.getElementById('setup-modal').style.display='block'; }
+
+// ════════════════════════════════════════
+// PWA INSTALL
+// ════════════════════════════════════════
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!sessionStorage.getItem('pfr_dismissed')) {
+    document.getElementById('install-banner').style.display='flex';
+  }
+});
+document.getElementById('install-btn').addEventListener('click', async()=>{
+  if (deferredPrompt) { deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; }
+  document.getElementById('install-banner').style.display='none';
+});
+function dismissInstall() {
+  sessionStorage.setItem('pfr_dismissed','1');
+  document.getElementById('install-banner').style.display='none';
+}
+
+// ════════════════════════════════════════
+// SCROLL ANIMATIONS
+// ════════════════════════════════════════
+const obs = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{ if(e.isIntersecting){ e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; }});
+},{threshold:0.08});
+document.querySelectorAll('.player-card').forEach((el,i)=>{
+  el.style.opacity='0'; el.style.transform='translateY(20px)';
+  el.style.transition=`opacity 0.5s ${i*0.04}s ease, transform 0.5s ${i*0.04}s ease`;
+  obs.observe(el);
+});
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+if (!CONFIGURED) {
+  document.getElementById('setup-banner').style.display='block';
+  document.getElementById('main-nav').style.top='38px';
+}
+
+loadAll();
+
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+  const sw = `
+    const CACHE='pfr-v1';
+    self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/pfr-team-site.html']))));
+    self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))));
+  `;
+  const blob = new Blob([sw],{type:'text/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+}
+</script>
+</body>
+</html>
